@@ -11,14 +11,15 @@ import math
 import pandas as pd
 import os
 from skimage.measure import block_reduce
-import ct_projector.projector.cupy as ct_projector
 import Diffusion_for_CT_motion.simulation_data_generation.ct_basic as ct
 import Diffusion_for_CT_motion.simulation_data_generation.functions as ff
 import Diffusion_for_CT_motion.simulation_data_generation.transformation as transform
 
+import ct_projector.projector.cupy as ct_projector
+
 main_folder = '/mnt/camca_NAS/Portable_CT_data'
 
-motion_type = 'simulated_partial_motion_v3' # each gantry rotation has motion except the first one
+motion_type = 'simulated_partial_motion_v2' # each gantry rotation has motion except the first one
 
 ################ define the patient list
 patient_sheet = pd.read_excel(os.path.join(main_folder,'Patient_list', 'NEW_CT_concise_collected_fixed_static_edited.xlsx'),dtype={'Patient_ID': str, 'Patient_subID': str})
@@ -50,7 +51,7 @@ CP_num = 5
 geometry = 'fan'
 total_view = 1400  ### 2340 views by default
 gantry_rotation_time = 500 #unit ms, 500ms by default
-view_increment = 70 # increment in gantry views
+view_increment = 280 # increment in gantry views
 
 # main code
 for i in patient_index_list:
@@ -252,9 +253,6 @@ for i in patient_index_list:
         parameter_file = os.path.join(random_folder,'motion_parameters.npy')
         np.save(parameter_file, np.array([[amplitude_collect],[sga_list], [t], [total_view], [gantry_rotation_time]], dtype=object))
 
-        # generate backprojection
-        recon = ct.filtered_backporjection(projection,angles,projector,fbp_projector, geometry, back_to_original_value=True)
-           
         # save recon
         recon_nb_image = np.rollaxis(recon,0,3)  
         print('under 1mm, recon shape: ', recon_nb_image.shape)
