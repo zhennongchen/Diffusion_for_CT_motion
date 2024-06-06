@@ -10,13 +10,13 @@ import Diffusion_for_CT_motion.utils.Generator as Generator
 import Diffusion_for_CT_motion.utils.Data_processing as Data_processing
 
 ########################### set the trial name and trained model path
-trial_name = 'portable_DDPM_patch_3Dmotion_hist_trial'
-epoch = 52
-trained_model_filename = '/mnt/camca_NAS/diffusion_ct_motion/models/portable_DDPM_patch_3Dmotion_hist_v2/models/model-' + str(epoch) + '.pt'
-save_folder = os.path.join('/mnt/camca_NAS/diffusion_ct_motion/models', trial_name, 'pred_images_portable_real'); os.makedirs(save_folder, exist_ok=True)
+trial_name = 'portable_DDPM_patch_3Dmotion_hist_v1'
+epoch = 86
+trained_model_filename = '/mnt/camca_NAS/diffusion_ct_motion/models/portable_DDPM_patch_3Dmotion_hist_v1/models/model-' + str(epoch) + '.pt'
+save_folder = os.path.join('/mnt/camca_NAS/diffusion_ct_motion/models', trial_name, 'pred_images_portable_simulated'); os.makedirs(save_folder, exist_ok=True)
 
 ########################### set the data path!
-data_sheet = os.path.join('/mnt/camca_NAS/diffusion_ct_motion/data/Patient_list/Patient_list_train_test_simulated_partial_motion_v2.xlsx')
+data_sheet = os.path.join('/mnt/camca_NAS/diffusion_ct_motion/data/Patient_list/Patient_list_train_test_simulated_all_motion_v1.xlsx')
 b = Build_list.Build(data_sheet)
 _,_,_,_, _,_, x0_list, _, condition_list, _, _,_,_ = b.__build__(batch_list = [4])  # batch 4 is the testing batch
 n = ff.get_X_numbers_in_interval(total_number = x0_list.shape[0],start_number = 5,end_number = 6, interval = 20) # each case has 20 motion samples

@@ -11,13 +11,13 @@ import Diffusion_for_CT_motion.Build_lists.Build_list as Build_list
 import Diffusion_for_CT_motion.utils.Generator as Generator
 
 ########################### set the trial name and pre-trained model path
-trial_name = 'portable_DDPM_patch_3Dmotion_hist_trial'
+trial_name = 'portable_DDPM_patch_3Dmotion_hist_v1'
 pre_trained_model = None # or path of the pre-trained model
 start_step = 0 # if new training, start step = 0, if continue, start_step = None
 
 ########################### set the data path!
 # define train
-build_sheet =  Build_list.Build(os.path.join('/mnt/camca_NAS/diffusion_ct_motion/data/Patient_list/Patient_list_train_test_simulated_partial_motion_v2.xlsx'))  # this is data path for training data
+build_sheet =  Build_list.Build(os.path.join('/mnt/camca_NAS/diffusion_ct_motion/data/Patient_list/Patient_list_train_test_simulated_all_motion_v1.xlsx'))  # this is data path for training data
 _,_,_,_, _,_, x0_list1, _, condition_list1, _, _,_,_ = build_sheet.__build__(batch_list = [0,1,2,3]) 
 x0_list_train = np.copy(x0_list1); condition_list_train = np.copy(condition_list1)
 
