@@ -20,7 +20,7 @@ save_folder = os.path.join('/mnt/camca_NAS/diffusion_ct_motion/models', trial_na
 ########################### set the data path!
 data_sheet = os.path.join('/mnt/camca_NAS/diffusion_ct_motion/data/Patient_list/Patient_list_real_portable_CT_202404_resample_avg.xlsx')
 b = Build_list.Build(data_sheet)
-_,_,_,_, _,_, x0_list, _, condition_list, _, _,_,_ = b.__build__(batch_list = [5])  # x0 is motino-free, condition is motion-corrupted
+_,_,_,_, _,_, x0_list, _, condition_list, _, _,_,_ = b.__build__(batch_list = [5])  # default = 5, don't change
 print(x0_list.shape)
 simulated_data = False
 

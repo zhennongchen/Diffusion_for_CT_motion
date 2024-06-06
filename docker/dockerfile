@@ -1,4 +1,16 @@
 FROM sk1064/medivista:latest
+# FROM nvidia/cuda:11.0.3-cudnn8-devel-ubuntu20.04
+# FROM pytorch/pytorch:1.7.1-cuda11.0-cudnn8-devel
+# FROM pytorch/pytorch:1.9.0-cuda11.1-cudnn8-devel
+
+# RUN apt-get -y update && apt-get install -y \
+#         python3.8 \
+#         python3-pip \
+#         wget \
+#         git \
+#         libopenexr-dev \
+#         git-lfs && \
+#     apt clean
 
 
 RUN rm /usr/bin/python3 && \
@@ -10,6 +22,8 @@ RUN python3 -m pip install --upgrade pip
 # install pytorch
 # torch < 2.0.0
 RUN python3 -m pip install torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchaudio==0.9.0 -f https://download.pytorch.org/whl/torch_stable.html
+# torch >= 2.0.0
+# RUN python3 -m pip install torch==2.0.0+cu118 torchvision==0.15.1+cu118 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu118
 
 # install requirements
 COPY requirements.txt /env/requirements.txt
@@ -18,6 +32,12 @@ RUN python3 -m pip install --no-cache-dir -r /env/requirements.txt
 # GitHub installations:
 RUN python3 -m pip install git+https://github.com/zhennongchen/CTProjector.git 
 
+# Install c3d 
+# RUN useradd -m -p c3dpwd -g sudo c3duser
+# RUN wget 'https://sourceforge.net/projects/c3d/files/c3d/Nightly/c3d-nightly-Linux-gcc64.tar.gz'
+# RUN tar -xf c3d-nightly-Linux-gcc64.tar.gz
+# RUN pwd
+# RUN cp -a /c3d-1.4.0-Linux-gcc64/bin/. /usr/local/bin
 
 COPY entrypoint.sh /env/entrypoint.sh
 RUN chmod +x /env/entrypoint.sh

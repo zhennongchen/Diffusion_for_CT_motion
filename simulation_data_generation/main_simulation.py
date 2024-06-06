@@ -19,6 +19,7 @@ import ct_projector.projector.cupy as ct_projector
 
 main_folder = '/mnt/camca_NAS/Portable_CT_data'
 
+################ give this simulation a name
 motion_type = 'simulated_partial_motion_v2' # each gantry rotation has motion except the first one
 
 ################ define the patient list
@@ -31,9 +32,11 @@ data_folder = os.path.join(main_folder, 'nii_imgs_202404', 'static')
 save_folder = os.path.join(main_folder, 'simulations_202404', motion_type)
 ff.make_folder([save_folder])
 
-# define patient list index and simulation index
-L = np.arange(0,10) # simulated random data index, 
+# define patient list index and simulation index ********
+random_index_list = np.arange(0,10) # simulated random data index, 
 patient_index_list = np.arange(0,100)  # patient list index
+################
+
 
 # defaults, don't change unless necessary
 amplitude_max_severe = 10 
@@ -88,6 +91,7 @@ for i in patient_index_list:
         print('static ref shape: ', static_ref.shape)
     print('static_ref is None? ', static_ref is None)
 
+    L = random_index_list
     for random_i in L:
         t = np.linspace(0, gantry_rotation_time, CP_num, endpoint=True)
         # create folder

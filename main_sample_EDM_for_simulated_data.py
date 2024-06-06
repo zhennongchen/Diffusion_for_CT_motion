@@ -15,7 +15,7 @@ import Diffusion_for_CT_motion.utils.Generator as Generator
 trial_name = 'portable_EDM_patch_3Dmotion_hist_v1'
 epoch = 82
 trained_model_filename = '/mnt/camca_NAS/diffusion_ct_motion/models/portable_EDM_patch_3Dmotion_hist_v1/models/model-' + str(epoch) + '.pt'
-save_folder = os.path.join('/mnt/camca_NAS/diffusion_ct_motion/models', trial_name, 'pred_images_portable_simulated'); os.makedirs(save_folder, exist_ok=True)
+save_folder = os.path.join('/mnt/camca_NAS/diffusion_ct_motion/models', trial_name, 'pred_images_portable_simulated2'); os.makedirs(save_folder, exist_ok=True)
 
 ########################### set the data path!
 data_sheet = os.path.join('/mnt/camca_NAS/diffusion_ct_motion/data/Patient_list/Patient_list_train_test_simulated_all_motion_v1.xlsx')
