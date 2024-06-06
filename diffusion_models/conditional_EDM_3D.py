@@ -35,7 +35,6 @@ class EDM(nn.Module):  ### both 2D and 3D
     def __init__(
         self,
         model, 
-
         *,
         image_size,
         num_sample_steps, # number of sampling steps
@@ -271,10 +270,10 @@ class Trainer(object):
         self,
         diffusion_model,
         generator_train,
-        generator_val,
         train_batch_size,
-
+        include_validation,
         *,
+        generator_val = None,
         train_num_steps = 10000, # total training epochs
         results_folder = None,
         train_lr = 1e-4,
@@ -314,9 +313,11 @@ class Trainer(object):
         dl = DataLoader(self.ds, batch_size = train_batch_size, shuffle = False, pin_memory = True, num_workers = 0)# cpu_count())
         self.dl = self.accelerator.prepare(dl)
 
-        self.ds_val = generator_val
-        dl_val = DataLoader(self.ds_val, batch_size = train_batch_size, shuffle = False, pin_memory = True, num_workers = 0)# cpu_count())
-        self.dl_val = self.accelerator.prepare(dl_val)
+        self.validation = include_validation
+        if self.validation:
+            self.ds_val = generator_val
+            dl_val = DataLoader(self.ds_val, batch_size = train_batch_size, shuffle = False, pin_memory = True, num_workers = 0)# cpu_count())
+            self.dl_val = self.accelerator.prepare(dl_val)
 
         # optimizer
         self.opt = Adam(diffusion_model.parameters(), lr = train_lr, betas = adam_betas)
@@ -443,21 +444,22 @@ class Trainer(object):
                 self.ema.update()
 
                 # do the validation if necessary
-                if self.step !=0 and divisible_by(self.step, self.validation_every):
-                    print('validation at step: ', self.step)
-                    self.model.eval()
-                    with torch.no_grad():
-                        val_loss = []
-                        for batch in self.dl_val:
-                            batch_x0, batch_condition = batch
-                            data_x0 = batch_x0.to(device)
-                            data_condition = batch_condition.to(device)
-                            with self.accelerator.autocast():
-                                loss = self.model(data_x0, data_condition )
-                            val_loss.append(loss.item())
-                        val_loss = sum(val_loss) / len(val_loss)
-                        print('validation loss: ', val_loss)
-                    self.model.train(True)
+                if self.validation:
+                    if self.step !=0 and divisible_by(self.step, self.validation_every):
+                        print('validation at step: ', self.step)
+                        self.model.eval()
+                        with torch.no_grad():
+                            val_loss = []
+                            for batch in self.dl_val:
+                                batch_x0, batch_condition = batch
+                                data_x0 = batch_x0.to(device)
+                                data_condition = batch_condition.to(device)
+                                with self.accelerator.autocast():
+                                    loss = self.model(data_x0, data_condition )
+                                val_loss.append(loss.item())
+                            val_loss = sum(val_loss) / len(val_loss)
+                            print('validation loss: ', val_loss)
+                        self.model.train(True)
 
                 # save the training log
                 training_log.append([self.step,average_loss, self.scheduler.get_last_lr()[0], val_loss])
@@ -466,7 +468,9 @@ class Trainer(object):
                 df.to_excel(os.path.join(log_folder, 'training_log.xlsx'),index=False)
 
                 # at the end of each epoch, call on_epoch_end
-                self.ds.on_epoch_end(); self.ds_val.on_epoch_end()
+                self.ds.on_epoch_end()
+                if self.valdiation:
+                    self.ds_val.on_epoch_end()
                 pbar.update(1)
 
         accelerator.print('training complete')

@@ -363,7 +363,7 @@ class Unet3D(nn.Module):
             is_last = ind == (len(in_out) - 1)
 
             if layer_full_attn == True:
-                attn_klass = FullAttention
+                attn_klass = FullAttention 
             elif layer_full_attn == False:
                 attn_klass = LinearAttention3D
           
@@ -757,6 +757,66 @@ class GaussianDiffusion3D(nn.Module):
         final_answer_x0 = self.unnormalize(final_answer_x0)
         return final_answer_x0
 
+    @torch.inference_mode()
+    def ddim_sample(self, shape, condition = None, return_all_timesteps = False, save_all_timesteps_ref = None):
+        batch, device, total_timesteps, sampling_timesteps, eta, objective = shape[0], self.device, self.num_timesteps, self.sampling_timesteps, self.ddim_sampling_eta, self.objective
+    
+        times = torch.linspace(-1, total_timesteps - 1, steps = sampling_timesteps + 1)   # [-1, 0, 1, 2, ..., T-1] when sampling_timesteps == total_timesteps
+        times = list(reversed(times.int().tolist()))
+        time_pairs = list(zip(times[:-1], times[1:])) # [(T-1, T-2), (T-2, T-3), ..., (1, 0), (0, -1)]
+
+        img = torch.randn(shape, device = device)
+        imgs = [img]
+
+        x_start = None
+
+        coefficients = []
+        for time, time_next in tqdm(time_pairs, desc = 'sampling loop time step'):
+            time_cond = torch.full((batch,), time, device = device, dtype = torch.long)
+            self_cond = x_start if self.self_condition else None
+            if condition is not None:
+                pred = self.model_predictions(img, time_cond, condition, self_cond)
+            else:
+                pred = self.model_predictions(img, time_cond, self_cond)
+
+            if time_next < 0:
+                img = pred.pred_x_start
+                imgs.append(img)
+                
+                if return_all_timesteps == True:
+                    img1 = torch.clone(img).detach().cpu().numpy().squeeze()
+                    img1 = Data_processing.crop_or_pad(img1, save_all_timesteps_ref[3], value = np.min(img1))
+                    img1 = Data_processing.normalize_image(img1, normalize_factor = save_all_timesteps_ref[2], image_max = save_all_timesteps_ref[1], image_min = save_all_timesteps_ref[0], invert = True)
+                    nb.save(nb.Nifti1Image(img1, save_all_timesteps_ref[4]), os.path.join(save_all_timesteps_ref[-1],  'time_' + str(time) + '_pred_x_start.nii.gz'))
+
+                continue
+
+            alpha = self.alphas_cumprod[time]
+            alpha_next = self.alphas_cumprod[time_next]
+
+
+            sigma = eta * ((1 - alpha / alpha_next) * (1 - alpha_next) / (1 - alpha)).sqrt()
+            c = (1 - alpha_next - sigma ** 2).sqrt()
+
+            noise = torch.randn_like(img)
+
+            img = pred.pred_x_start * alpha_next.sqrt() + \
+                  c * pred.pred_noise + \
+                  sigma * noise
+
+            if return_all_timesteps == True and ((time+1) % 50 == 0 or time == 0 or time == 1):
+                img1 = torch.clone(pred.pred_x_start).detach().cpu().numpy().squeeze()
+                img1 = Data_processing.crop_or_pad(img1, save_all_timesteps_ref[3], value = np.min(img1))
+                img1 = Data_processing.normalize_image(img1, normalize_factor = save_all_timesteps_ref[2], image_max = save_all_timesteps_ref[1], image_min = save_all_timesteps_ref[0], invert = True)
+                nb.save(nb.Nifti1Image(img1, save_all_timesteps_ref[4]), os.path.join(save_all_timesteps_ref[-1],  'time_' + str(time) + '_pred_x_start.nii.gz'))
+
+
+            imgs.append(img)
+
+        ret = img #if not return_all_timesteps else torch.stack(imgs, dim = 1)
+        ret = self.unnormalize(ret)
+        return ret
+
 
     @torch.inference_mode()
     def sample(self, condition = None, batch_size = 16, return_all_timesteps = False, save_all_timesteps_ref = None):
@@ -1123,7 +1183,7 @@ class Sampler(object):
         self.ema.load_state_dict(data["ema"])
 
 
-    def sample_3D_slice_stack_w_trained_model(self, trained_model_filename, ground_truth_image_file, motion_image_file,  slice_range, save_file,save_gt_motion = None, portable_CT = False):
+    def sample_3D_slice_stack_w_trained_model(self, trained_model_filename, ground_truth_image_file, motion_image_file,  slice_range, save_file,save_gt_motion = None, not_start_from_first_slice = False):
         
         background_cutoff = self.background_cutoff; maximum_cutoff = self.maximum_cutoff; normalize_factor = self.normalize_factor
         self.load_model(trained_model_filename) 
@@ -1136,7 +1196,7 @@ class Sampler(object):
 
         gt = nb.load(ground_truth_image_file)
         gt_img = gt.get_fdata()
-        if portable_CT == False:
+        if not_start_from_first_slice == False:
             gt_img = gt_img[:,:,slice_range[0]: slice_range[1]]
         else:
             gt_img = gt_img[:,:,slice_range[0] + 10: slice_range[1] + 10]
@@ -1179,7 +1239,7 @@ class Sampler(object):
 
         # save gt and motion
         if save_gt_motion:
-            if portable_CT == False:
+            if not_start_from_first_slice == False:
                 motion_img = nb.load(motion_image_file).get_fdata()[:,:,slice_range[0]: slice_range[1]]
             else:
                 motion_img = nb.load(motion_image_file).get_fdata()[:,:,slice_range[0] + 10: slice_range[1] + 10]
