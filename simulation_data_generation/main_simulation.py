@@ -12,7 +12,7 @@ import pandas as pd
 import os
 from skimage.measure import block_reduce
 import ct_projector.projector.cupy as ct_projector
-import Diffusion_for_CT_motion.simulation_data_generation.motion_simulation.ct_basic as ct
+import Diffusion_for_CT_motion.simulation_data_generation.ct_basic as ct
 import Diffusion_for_CT_motion.simulation_data_generation.functions as ff
 import Diffusion_for_CT_motion.simulation_data_generation.transformation as transform
 
@@ -20,7 +20,21 @@ main_folder = '/mnt/camca_NAS/Portable_CT_data'
 
 motion_type = 'simulated_partial_motion_v3' # each gantry rotation has motion except the first one
 
-# defaults
+################ define the patient list
+patient_sheet = pd.read_excel(os.path.join(main_folder,'Patient_list', 'NEW_CT_concise_collected_fixed_static_edited.xlsx'),dtype={'Patient_ID': str, 'Patient_subID': str})
+patient_sheet['use'] = patient_sheet['use'].fillna(0)
+patient_sheet = patient_sheet[(patient_sheet['use'] != 0) & (patient_sheet['use'] != 'no')]
+print('patient sheet len: ', len(patient_sheet))
+
+data_folder = os.path.join(main_folder, 'nii_imgs_202404', 'static')
+save_folder = os.path.join(main_folder, 'simulations_202404', motion_type)
+ff.make_folder([save_folder])
+
+# define patient list index and simulation index
+L = np.arange(0,10) # simulated random data index, 
+patient_index_list = np.arange(0,100)  # patient list index
+
+# defaults, don't change unless necessary
 amplitude_max_severe = 10 
 displacement_max_severe = 6
 amplitude_max_mild = 5 
@@ -36,22 +50,9 @@ CP_num = 5
 geometry = 'fan'
 total_view = 1400  ### 2340 views by default
 gantry_rotation_time = 500 #unit ms, 500ms by default
-view_increment = 28 # increment in gantry views
+view_increment = 70 # increment in gantry views
 
-# define the patient list
-patient_sheet = pd.read_excel(os.path.join(main_folder,'Patient_list', 'NEW_CT_concise_collected_fixed_static_edited.xlsx'),dtype={'Patient_ID': str, 'Patient_subID': str})
-patient_sheet['use'] = patient_sheet['use'].fillna(0)
-patient_sheet = patient_sheet[(patient_sheet['use'] != 0) & (patient_sheet['use'] != 'no')]
-print('patient sheet len: ', len(patient_sheet))
-
-data_folder = os.path.join(main_folder, 'nii_imgs_202404', 'static')
-save_folder = os.path.join(main_folder, 'simulations_202404', motion_type)
-ff.make_folder([save_folder])
-
-# define patient list index and simulation index
-L = np.arange(0,10)
-patient_index_list = np.arange(0,100)
-
+# main code
 for i in patient_index_list:
     row = patient_sheet.iloc[i]
     patient_id = row['Patient_ID']

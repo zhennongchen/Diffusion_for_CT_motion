@@ -14,10 +14,11 @@ import CTProjector.src.ct_projector.projector.numpy.parallel as numpy_para
 import numpy as np
 import cupy as cp
 import os
-import HeadCT_motion_correction_PAR.functions_collection as ff
-import HeadCT_motion_correction_PAR.motion_simulator.transformation as transform
 import glob as gb
 import nibabel as nb
+import Diffusion_for_CT_motion.simulation_data_generation.functions as ff
+import Diffusion_for_CT_motion.simulation_data_generation.transformation as transform
+
 
 
 # for nibabel:
