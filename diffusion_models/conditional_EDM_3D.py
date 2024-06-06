@@ -293,7 +293,6 @@ class Trainer(object):
         super().__init__()
 
         # accelerator
-
         self.accelerator = Accelerator(
             split_batches = True,
             mixed_precision = mixed_precision_type if amp else 'no'
@@ -469,7 +468,7 @@ class Trainer(object):
 
                 # at the end of each epoch, call on_epoch_end
                 self.ds.on_epoch_end()
-                if self.valdiation:
+                if self.validation:
                     self.ds_val.on_epoch_end()
                 pbar.update(1)
 
@@ -525,7 +524,7 @@ class Sampler(object):
         self.ema.load_state_dict(data["ema"])
 
 
-    def sample_3D_w_trained_model(self, trained_model_filename, ground_truth_image_file, motion_image_file,  slice_range, save_file,save_gt_motion = None, portable_CT = False):
+    def sample_3D_w_trained_model(self, trained_model_filename, ground_truth_image_file, motion_image_file,  slice_range, save_file,save_gt_motion = None, not_start_from_first_slice = False):
      
         self.load_model(trained_model_filename) 
         
@@ -538,7 +537,7 @@ class Sampler(object):
         gt = nb.load(ground_truth_image_file)
         gt_img = gt.get_fdata()
         print('gt image shape: ', gt_img.shape)
-        if portable_CT == False:
+        if not_start_from_first_slice == False:
             gt_img = gt_img[:,:,slice_range[0]: slice_range[1]]
         else:
             gt_img = gt_img[:,:,slice_range[0] + 10: slice_range[1] + 10]
@@ -577,7 +576,7 @@ class Sampler(object):
 
         # save gt and motion
         if save_gt_motion:
-            if portable_CT == False:
+            if not_start_from_first_slice == False:
                 motion_img = nb.load(motion_image_file).get_fdata()[:,:,slice_range[0]: slice_range[1]]
             else:
                 motion_img = nb.load(motion_image_file).get_fdata()[:,:,slice_range[0] + 10: slice_range[1] + 10]
