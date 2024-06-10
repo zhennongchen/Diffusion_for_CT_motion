@@ -22,7 +22,7 @@ main_folder = '/mnt/camca_NAS/Portable_CT_data'
 ################ give this simulation a name
 motion_type = 'simulated_partial_motion_v2' # each gantry rotation has motion except the first one
 
-################ define the patient list
+################ define the patient list (100 fixed CT)
 patient_sheet = pd.read_excel(os.path.join(main_folder,'Patient_list', 'NEW_CT_concise_collected_fixed_static_edited.xlsx'),dtype={'Patient_ID': str, 'Patient_subID': str})
 patient_sheet['use'] = patient_sheet['use'].fillna(0)
 patient_sheet = patient_sheet[(patient_sheet['use'] != 0) & (patient_sheet['use'] != 'no')]

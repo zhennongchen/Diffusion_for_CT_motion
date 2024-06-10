@@ -21,7 +21,7 @@ save_folder = os.path.join('/mnt/camca_NAS/diffusion_ct_motion/models', trial_na
 data_sheet = os.path.join('/mnt/camca_NAS/diffusion_ct_motion/data/Patient_list/Patient_list_train_test_simulated_all_motion_v1.xlsx')
 b = Build_list.Build(data_sheet)
 _,_,_,_, _,_, x0_list, _, condition_list, _, _,_,_ = b.__build__(batch_list = [4])  # batch 4 is the testing batch
-n = ff.get_X_numbers_in_interval(total_number = x0_list.shape[0],start_number = 5,end_number = 6, interval = 20) # each case has 20 motion samples
+n = ff.get_X_numbers_in_interval(total_number = x0_list.shape[0],start_number = 0,end_number = 20, interval = 20) # each case has 20 motion samples
 x0_list = x0_list[n]; condition_list = condition_list[n]
 simulated_data = True
 
