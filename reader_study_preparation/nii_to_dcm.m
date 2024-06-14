@@ -1,8 +1,7 @@
 %%% this script is for those patients with multiple folders for cine SAX
 %%% data in the raw data
 clear all; close all; clc;
-addpath(genpath('/Users/zhennongchen/Documents/GitHub/CMR_HFpEF_Analysis/matlab'));
-addpath(genpath('Users/zhennongchen/Documents/GitHub/Volume_Rendering_by_DL/matlab'));
+addpath(genpath('/Users/zhennongchen/Documents/GitHub/Diffusion_models/Manuscript'));
 data_path1 = '/Volumes/Camca/home/ZC/diffusion_ct_motion/examples/real_data';
 data_path2 = '/Volumes/Camca/home/ZC/Portable_CT_data/IRB2022P002233_collected_202404';
 
