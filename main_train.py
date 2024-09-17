@@ -6,22 +6,24 @@ import numpy as np
 import Diffusion_for_CT_motion.diffusion_models.conditional_DDPM_3D as ddpm_3D
 import Diffusion_for_CT_motion.diffusion_models.conditional_EDM_3D as edm
 import Diffusion_for_CT_motion.utils.functions_collection as ff
-import Diffusion_for_CT_motion.Build_lists.Build_list as Build_list
+import Diffusion_for_CT_motion.utils.Build_list as Build_list
 import Diffusion_for_CT_motion.utils.Generator as Generator
 
-########################### set the trial name and pre-trained model path
+########################### important parameter: set the trial name and pre-trained model path
 trial_name = 'portable_EDM_patch_3Dmotion_hist_v1'
 pre_trained_model = None #  or path of the pre-trained model
 start_step = 0 # if new training, start step = 0, if continue, start_step = None
 
-########################### set the data path!
+########################### important parameter: set the data path!
 # define train
 build_sheet =  Build_list.Build(os.path.join('/mnt/camca_NAS/diffusion_ct_motion/data/Patient_list/Patient_list_train_test_simulated_all_motion_v1.xlsx'))  # this is data path for training data
 _,_,_,_, _,_, x0_list1, _, condition_list1, _, _,_,_ = build_sheet.__build__(batch_list = [0,1,2,3])  # these are training batches
-x0_list_train = np.copy(x0_list1)[0:3]; condition_list_train = np.copy(condition_list1)[0:3]
+x0_list_train = np.copy(x0_list1); condition_list_train = np.copy(condition_list1)
 
-print('train:', x0_list_train.shape, condition_list_train.shape)
-print(x0_list_train[0:3], condition_list_train[0:3])
+# define val
+_,_,_,_, _,_, x0_list2, _, condition_list2, _, _,_,_ = build_sheet.__build__(batch_list = [4])  # this is data path for validation data
+x0_list_val = np.copy(x0_list2); condition_list_val = np.copy(condition_list2)
+
 
 # set default, don't change unless necessary
 image_size_3D = [256,256,50]
@@ -70,29 +72,29 @@ generator_train = Generator.Dataset_dual_patch(
     augment = True,  # only translation
     augment_frequency = 0.2,)
 
-# not include validation in this script
-# generator_val = Generator.Dataset_dual_patch(
-#     x0_list_val,
-#     condition_list_val,
-#     image_size_3D = [image_size_3D[0], image_size_3D[1], val_slice_number],
-#     patch_size = 256,
-#     patch_stride = 1,
-#     original_patch_num = 1,
-#     random_sampled_patch_num = 0,
-#     patch_selection = None,
-#     slice_number = val_slice_number,
-#     slice_start = val_slice_start,
 
-#     histogram_equalization = histogram_equalization, 
-#     background_cutoff = background_cutoff, 
-#     maximum_cutoff = maximum_cutoff,
-#     normalize_factor = normalize_factor,)
+generator_val = Generator.Dataset_dual_patch(
+    x0_list_val,
+    condition_list_val,
+    image_size_3D = [image_size_3D[0], image_size_3D[1], val_slice_number],
+    patch_size = 256,
+    patch_stride = 1,
+    original_patch_num = 1,
+    random_sampled_patch_num = 0,
+    patch_selection = None,
+    slice_number = val_slice_number,
+    slice_start = val_slice_start,
+
+    histogram_equalization = histogram_equalization, 
+    background_cutoff = background_cutoff, 
+    maximum_cutoff = maximum_cutoff,
+    normalize_factor = normalize_factor,)
 
 
 trainer = edm.Trainer(
     diffusion_model= diffusion_model,
     generator_train = generator_train,
-    include_validation = False,
+    include_validation = True,
     train_batch_size = 1,
 
     train_num_steps = 10000, # total training epochs
