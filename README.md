@@ -19,7 +19,7 @@ The main contributions of HM-EDM are as follows:<br />
 ### Environment Setup
 The entire code is [containerized](https://www.docker.com/resources/what-container). This makes setting up environment swift and easy. Make sure you have nvidia-docker and Docker CE [installed](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker) on your machine before going further. <br />
 - You can build your own docker from the folder ```docker```. <br />
-- You need to download ```bins.npy``` and ```bins_mapped.npy```, which will be used in histogram equalization (define their path in ```utils/Generator.py```. Alternatively, you can use ```histogram_equalization.ipynb``` to generate your own version. <br />
+- You need to download ```bins.npy``` and ```bins_mapped.npy```, which will be used in histogram equalization (define their path in ```utils/Generator.py```). Alternatively, you can use ```histogram_equalization.ipynb``` to generate your own version. <br />
 
 
 ### Data Preparation
