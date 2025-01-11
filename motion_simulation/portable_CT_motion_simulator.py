@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-# this is the script for new data collected at 2024/04
+# Note many of the parameters are selected based on author's visualization experience.
+
 # %%
 import numpy as np
 import cupy as cp
@@ -38,7 +39,7 @@ CP_num = 5
 geometry = 'fan'
 total_view = 1400  
 gantry_rotation_time = 500 
-view_increment = 28 
+view_increment = 28
 
 # define the patient list
 patient_sheet = pd.read_excel(os.path.join(main_folder,'Patient_list', 'NEW_CT_concise_collected_fixed_static_edited.xlsx'),dtype={'Patient_ID': str, 'Patient_subID': str})
@@ -100,11 +101,6 @@ for i in patient_index_list:
 
         if os.path.isfile(os.path.join(random_folder,'image_data','recon_resample.nii.gz')) == 1:
             print('already done this motion')
-
-            motion = nb.load(os.path.join(random_folder, 'image_data','recon_resample.nii.gz')).get_fdata()
-            static = nb.load(os.path.join(main_folder, 'simulations_202404','simulated_all_motion_v1',patient_id, patient_subid, 'static','image_data','recon_resample.nii.gz')).get_fdata()
-            mae, mse, rmse, r_rmse, ssim = ff.compare(motion[:,:,5:], static[:,:,5:], cutoff_low = -100)
-            print('mae: ', mae,  ' rmse: ', rmse, ' ssim: ', ssim)
             continue
 
         # gantry coverage = 1cm, which means it rotates once for every 1cm interval in the z-axis
@@ -184,10 +180,13 @@ for i in patient_index_list:
                 amplitude_tz_mm = transform.motion_control_point_generation(1, CP_num, amplitude_max = 0, displacement_max = 0, change_direction_limit = change_direction_limit, offset_value = offset_values[2], print_result =False)[:,0]
             
             # rotations
-            amplitude_rxryrz_degree = transform.motion_control_point_generation(3, CP_num, amplitude_max = amplitude_max_tem_r, displacement_max = displacement_max_tem_r, change_direction_limit = change_direction_limit, offset_value = offset_values[3:6], print_result =False)
-            amplitude_rx_degree = amplitude_rxryrz_degree[:,0]
-            amplitude_ry_degree = amplitude_rxryrz_degree[:,1]
-            amplitude_rz_degree = amplitude_rxryrz_degree[:,2]
+            while True:
+                amplitude_rxryrz_degree = transform.motion_control_point_generation(3, CP_num, amplitude_max = amplitude_max_tem_r, displacement_max = displacement_max_tem_r, change_direction_limit = change_direction_limit, offset_value = offset_values[3:6], print_result =False)
+                amplitude_rx_degree = amplitude_rxryrz_degree[:,0]
+                amplitude_ry_degree = amplitude_rxryrz_degree[:,1]
+                amplitude_rz_degree = amplitude_rxryrz_degree[:,2]
+                if np.max(abs(amplitude_rx_degree - amplitude_rx_degree[0]))+ np.max(abs(amplitude_ry_degree - amplitude_ry_degree[0])) <= 6:
+                    break
        
 
             # let's also consider the double skull artifacts, espeically in the occipital bone
