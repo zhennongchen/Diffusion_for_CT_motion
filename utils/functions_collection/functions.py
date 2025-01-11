@@ -2,10 +2,12 @@ import numpy as np
 import glob 
 import os
 from PIL import Image
-import math
+import math 
 import SimpleITK as sitk
 import cv2
 import random
+import nibabel as nb
+from dipy.align.reslice import reslice
 import Diffusion_models.Data_processing as dp
 from skimage.metrics import structural_similarity as compare_ssim
 
@@ -40,11 +42,6 @@ def apply_transfer_to_img(img: np.array, bins: np.array, bins_mapped: np.array, 
     img_mapped[~mask] = img[~mask]
 
     return img_mapped
-    
-
-# function: generate angle list
-def get_angles_zc(nview, total_angle,start_angle):
-    return np.arange(0, nview, dtype=np.float32) * (total_angle / 180 * np.pi) / nview + (start_angle / 180 * np.pi)
 
 # function: set window level
 def set_window(image,level,width):
@@ -59,16 +56,6 @@ def set_window(image,level,width):
     new[new<low] = low
     new = (new - low) * unit 
     return new
-
-# function: get first X numbers
-# if we have 1000 numbers, how to get the X number of every interval numbers?
-def get_X_numbers_in_interval(total_number, start_number, end_number , interval = 100):
-    '''if no random pick, then random_pick = [False,0]; else, random_pick = [True, X]'''
-    n = []
-    for i in range(0, total_number, interval):
-        n += [i + a for a in range(start_number,end_number)]
-    n = np.asarray(n)
-    return n
 
 
 # function: find all files under the name * in the main folder, put them into a file list
@@ -121,112 +108,6 @@ def make_folder(folder_list):
     for i in folder_list:
         os.makedirs(i,exist_ok = True)
 
-# function: write txt file
-def txt_writer(save_path,parameters,names):
-    t_file = open(save_path,"w+")
-    for i in range(0,len(parameters)):
-        t_file.write(names[i] + ': ')
-        for ii in range(0,len(parameters[i])):
-            t_file.write(str(np.round(parameters[i][ii],3))+' ')
-        t_file.write('\n')
-    t_file.close()
-
-
-
-# function: insert blank slices (to make FOV larger than image object)
-def insert_blank_slices(img,insert_to_which_direction , begin_blank_slice_num = 10, end_blank_slice_num = 10):
-    
-    min_val = np.min(img)
-
-    if insert_to_which_direction == 'x':
-        new_img = np.zeros([(img.shape[0] + begin_blank_slice_num + end_blank_slice_num), img.shape[1], img.shape[2]]) + min_val
-        new_img[begin_blank_slice_num :begin_blank_slice_num + img.shape[0],...] = img
-
-    if insert_to_which_direction == 'y':
-        new_img = np.zeros([img.shape[0], (img.shape[1] + begin_blank_slice_num + end_blank_slice_num), img.shape[2]]) + min_val
-        new_img[:, begin_blank_slice_num :begin_blank_slice_num + img.shape[1], :] = img
-
-    if insert_to_which_direction == 'z':
-        new_img = np.zeros([img.shape[0], img.shape[1], (img.shape[2] + begin_blank_slice_num + end_blank_slice_num)]) + min_val
-        new_img[:, :, begin_blank_slice_num :begin_blank_slice_num + img.shape[2]] = img
-    
-    return new_img
-
-
-# function: save grayscale image
-def save_grayscale_image(a,save_path,normalize = True, WL = 50, WW = 100):
-    I = np.zeros((a.shape[0],a.shape[1],3))
-    # normalize
-    if normalize == True:
-        a = set_window(a, WL, WW)
-
-    for i in range(0,3):
-        I[:,:,i] = a
-    
-    Image.fromarray((I*255).astype('uint8')).save(save_path)
-
-
-# function: normalize translation control points:
-def convert_translation_control_points(t, dim, from_pixel_to_1 = True):
-    if from_pixel_to_1 == True: # convert to a space -1 ~ 1
-        t = [tt / dim * 2 for tt in t]
-    else: # backwards
-        t = [tt / 2 * dim for tt in t]
-    
-    return np.asarray(t)
-
-
-# function: comparison error
-def compare(a, b,  cutoff_low = 0 ,cutoff_high = 1000000, extreme = 5000):
-    # compare a to b, b is ground truth
-    # if a pixel is lower than cutoff (meaning it's background), then it's out of comparison
-    c = np.copy(b)
-    diff = abs(a-b)
-   
-    a = a[(c>cutoff_low)& (c < cutoff_high) & (diff<extreme)].reshape(-1)
-    b = b[(c>cutoff_low)& (c < cutoff_high) & (diff<extreme)].reshape(-1)
-
-    diff = abs(a-b)
-
-    # mean absolute error
-    mae = np.mean(abs(a - b)) 
-
-    # mean squared error
-    mse = np.mean((a-b)**2) 
-
-    # root mean squared error
-    rmse = math.sqrt(mse)
-
-    # relative root mean squared error
-    dominator = math.sqrt(np.mean(b ** 2))
-    r_rmse = rmse / dominator * 100
-
-    # structural similarity index metric
-    cov = np.cov(a,b)[0,1]
-    ssim = (2 * np.mean(a) * np.mean(b)) * (2 * cov) / (np.mean(a) ** 2 + np.mean(b) ** 2) / (np.std(a) ** 2 + np.std(b) ** 2)
-
-    return mae, mse, rmse, r_rmse, ssim
-
-# function: dice
-def np_categorical_dice(pred, truth, k):
-    """ Dice overlap metric for label k """
-    A = (pred == k).astype(np.float32)
-    B = (truth == k).astype(np.float32)
-    return 2 * np.sum(A * B) / (np.sum(A) + np.sum(B))
-
-
-# function: erode and dilate
-def erode_and_dilate(img_binary, kernel_size, erode = None, dilate = None):
-    img_binary = img_binary.astype(np.uint8)
-
-    kernel = np.ones(kernel_size, np.uint8)  
-
-    if dilate is True:
-        img_binary = cv2.dilate(img_binary, kernel, iterations = 1)
-
-    if erode is True:
-        img_binary = cv2.erode(img_binary, kernel, iterations = 1)
-    return img_binary
 
 
 # function: patch definition:
@@ -262,5 +143,59 @@ def sample_patch_origins(patch_origins, N, include_original_list = None):
         pixels = patch_origins + pixels
 
     return pixels
+
+# function: generate angle list
+def get_angles_zc(nview, total_angle,start_angle):
+    return np.arange(0, nview, dtype=np.float32) * (total_angle / 180 * np.pi) / nview + (start_angle / 180 * np.pi)
+
+# function: resample nii files
+def resample_nifti(nifti, 
+                   order,
+                   mode, #'nearest' or 'constant' or 'reflect' or 'wrap'    
+                   cval,
+                   in_plane_resolution_mm=1.25,
+                   slice_thickness_mm=None,
+                   number_of_slices=None):
+    
+    # sometimes dicom to nifti programs don't define affine correctly.
+    resolution = np.array(nifti.header.get_zooms()[:3] + (1,))
+    if (np.abs(nifti.affine)==np.identity(4)).all():
+        nifti.set_sform(nifti.affine*resolution)
+
+
+    data   = nifti.get_fdata().copy()
+    shape  = nifti.shape[:3]
+    affine = nifti.affine.copy()
+    zooms  = nifti.header.get_zooms()[:3] 
+
+    if number_of_slices is not None:
+        new_zooms = (in_plane_resolution_mm,
+                     in_plane_resolution_mm,
+                     (zooms[2] * shape[2]) / number_of_slices)
+    elif slice_thickness_mm is not None:
+        new_zooms = (in_plane_resolution_mm,
+                     in_plane_resolution_mm,
+                     slice_thickness_mm)            
+    else:
+        new_zooms = (in_plane_resolution_mm,
+                     in_plane_resolution_mm,
+                     zooms[2])
+
+    new_zooms = np.array(new_zooms)
+    for i, (n_i, res_i, res_new_i) in enumerate(zip(shape, zooms, new_zooms)):
+        n_new_i = (n_i * res_i) / res_new_i
+        # to avoid rounding ambiguities
+        if (n_new_i  % 1) == 0.5: 
+            new_zooms[i] -= 0.001
+
+    data_resampled, affine_resampled = reslice(data, affine, zooms, new_zooms, order=order, mode=mode , cval = cval)
+    nifti_resampled = nb.Nifti1Image(data_resampled, affine_resampled)
+
+    x=nifti_resampled.header.get_zooms()[:3]
+    y=new_zooms
+    if not np.allclose(x,y, rtol=1e-02):
+        print('not all close: ', x,y)
+
+    return nifti_resampled   
 
     

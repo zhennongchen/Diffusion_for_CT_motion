@@ -12,7 +12,7 @@ import Diffusion_for_CT_motion.utils.Data_processing as Data_processing
 import Diffusion_for_CT_motion.utils.functions_collection as ff
 
 # histogram equalization pre-saved load
-bins = np.load('/mnt/camca_NAS/diffusion_ct_motion/data/histogram_equalization/bins.npy')
+bins = np.load('/mnt/camca_NAS/diffusion_ct_motion/data/histogram_equalization/bins.npy') # provide these two files in the repo
 bins_mapped = np.load('/mnt/camca_NAS/diffusion_ct_motion/data/histogram_equalization/bins_mapped.npy')
 
 # random function
@@ -168,7 +168,7 @@ class Dataset_dual_patch(Dataset):
             self.sample_patches()
             # print('in this patient, the sampled patches are: ', self.final_patch_origins)
             
-        # pick the slice range (can either be random or not fixed)
+        # pick the slice range (can either be random or fixed)
         if isinstance(self.slice_start, int): 
             self.slice_range = [self.slice_start, self.slice_start + self.slice_number]
         else:
@@ -182,17 +182,13 @@ class Dataset_dual_patch(Dataset):
                 count += 1
                 if count == 500:
                     start = 6; self.slice_range = [start, start + self.slice_number]; break
-        # print('picked slice range: ', self.slice_range)
 
         x0_image_data = np.copy(self.current_x0_data)[:,:,self.slice_range[0]:self.slice_range[1]]
 
         x0_image_data = Data_processing.crop_or_pad(x0_image_data, [self.image_size_3D[0], self.image_size_3D[1], self.slice_number], value = np.min(x0_image_data))
-        # print('in this getitem, image patch origin: ', self.final_patch_origins[p])
         x0_image_data = x0_image_data[self.final_patch_origins[p][0] : self.final_patch_origins[p][0] + self.patch_size, self.final_patch_origins[p][1] : self.final_patch_origins[p][1] + self.patch_size, ...]
-        
-        # print('shape of self.current_condition_data: ', self.current_condition_data.shape)
+
         condition_image_data = np.copy(self.current_condition_data)[:,: ,self.slice_range[0]:self.slice_range[1]]
-        # print('shape of condition image data: ', condition_image_data.shape)
         condition_image_data = Data_processing.crop_or_pad(condition_image_data, [self.image_size_3D[0], self.image_size_3D[1], self.slice_number], value = np.min(condition_image_data))
         condition_image_data = condition_image_data[self.final_patch_origins[p][0] : self.final_patch_origins[p][0] + self.patch_size, self.final_patch_origins[p][1] : self.final_patch_origins[p][1] + self.patch_size, ...]
 

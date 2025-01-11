@@ -4,7 +4,7 @@ import os
 import torch
 import numpy as np 
 import nibabel as nb
-import Diffusion_for_CT_motion.diffusion_models.conditional_DDPM_3D as ddpm_3D
+import Diffusion_for_CT_motion.diffusion_models.conditional_diffusion_3D as ddpm_3D
 import Diffusion_for_CT_motion.diffusion_models.conditional_EDM_3D as edm
 import Diffusion_for_CT_motion.utils.functions_collection as ff
 import Diffusion_for_CT_motion.utils.Build_list as Build_list
@@ -12,13 +12,13 @@ import Diffusion_for_CT_motion.utils.Generator as Generator
 
 
 ########################### important parameter: set the trial name and trained model path
-trial_name = 'portable_EDM_patch_3Dmotion_hist_v1'
-epoch = 82
-trained_model_filename = '/mnt/camca_NAS/diffusion_ct_motion/models/portable_EDM_patch_3Dmotion_hist_v1/models/model-' + str(epoch) + '.pt'
-save_folder = os.path.join('/mnt/camca_NAS/diffusion_ct_motion/models', trial_name, 'pred_images_portable_simulated2'); os.makedirs(save_folder, exist_ok=True)
+trial_name = 'diffusion_model'
+epoch = 100
+trained_model_filename = '/mnt/camca_NAS/diffusion_ct_motion/models/diffusion_model/models/model-' + str(epoch) + '.pt'  # fake path, replace with the actual path
+save_folder = os.path.join('/mnt/camca_NAS/diffusion_ct_motion/models', trial_name, 'pred_image'); os.makedirs(save_folder, exist_ok=True)
 
 ########################### important parameter: set the data path!
-data_sheet = os.path.join('/mnt/camca_NAS/diffusion_ct_motion/data/Patient_list/Patient_list_train_test_simulated_all_motion_v1.xlsx')
+data_sheet = os.path.join('/mnt/camca_NAS/diffusion_ct_motion/data/Patient_list/Patient_list_train_test.xlsx')
 b = Build_list.Build(data_sheet)
 _,_,_,_, _,_, x0_list, _, condition_list, _, _,_,_ = b.__build__(batch_list = [4])  # batch 4 is the testing batch
 simulated_data = True
@@ -34,7 +34,6 @@ maximum_cutoff = 2000
 normalize_factor = 'equation'
 clip_range = [-1,1]
 
-save_gt_motion = True
 ###########
 
 # main code
@@ -104,7 +103,7 @@ for i in range(0,x0_list.shape[0]):
                                         motion_image_file =  condition_file, 
                                         save_file = os.path.join(save_folder_case, 'pred-epoch-' + str(epoch) + '_slice' + str(slice_range[0]) +'to' + str(slice_range[1])+ '.nii.gz'),
                                         slice_range = slice_range, 
-                                        save_gt_motion = save_gt_motion,
+                                        save_gt_motion = False,
                                         not_start_from_first_slice = simulated_data)
   
     print('already done')
@@ -120,31 +119,5 @@ for i in range(0,x0_list.shape[0]):
     final_image[:,:,25:35] = slice_20_40_image[:,:,5:15]
     final_image[:,:,35:50] = slice_30_50_image[:,:,5:20]
     nb.save(nb.Nifti1Image(final_image,affine ), os.path.join(save_folder_case, 'pred-epoch-' + str(epoch) + '.nii.gz'))
-
-    # gt
-    slice_0_20_image = nb.load(os.path.join(save_folder_case, 'gt_slice0to20.nii.gz')).get_fdata()
-    slice_10_30_image = nb.load(os.path.join(save_folder_case, 'gt_slice10to30.nii.gz')).get_fdata()
-    slice_20_40_image = nb.load(os.path.join(save_folder_case, 'gt_slice20to40.nii.gz')).get_fdata()
-    slice_30_50_image = nb.load(os.path.join(save_folder_case, 'gt_slice30to50.nii.gz')).get_fdata()
-        
-    final_image = np.zeros((slice_0_20_image.shape[0], slice_0_20_image.shape[1], 50))
-    final_image[:,:,0:20] = slice_0_20_image[:,:,0:20]
-    final_image[:,:,20:30] = slice_10_30_image[:,:,10:20]
-    final_image[:,:,30:40] = slice_20_40_image[:,:,10:20]
-    final_image[:,:,40:50] = slice_30_50_image[:,:,10:20]
-    nb.save(nb.Nifti1Image(final_image,affine ), os.path.join(save_folder_case, 'gt.nii.gz'))
-
-    # motion
-    slice_0_20_image = nb.load(os.path.join(save_folder_case, 'motion_slice0to20.nii.gz')).get_fdata()
-    slice_10_30_image = nb.load(os.path.join(save_folder_case, 'motion_slice10to30.nii.gz')).get_fdata()
-    slice_20_40_image = nb.load(os.path.join(save_folder_case, 'motion_slice20to40.nii.gz')).get_fdata()
-    slice_30_50_image = nb.load(os.path.join(save_folder_case, 'motion_slice30to50.nii.gz')).get_fdata()
-
-    final_image = np.zeros((slice_0_20_image.shape[0], slice_0_20_image.shape[1], 50))
-    final_image[:,:,0:20] = slice_0_20_image[:,:,0:20]
-    final_image[:,:,20:30] = slice_10_30_image[:,:,10:20]
-    final_image[:,:,30:40] = slice_20_40_image[:,:,10:20]
-    final_image[:,:,40:50] = slice_30_50_image[:,:,10:20]
-    nb.save(nb.Nifti1Image(final_image,affine ), os.path.join(save_folder_case, 'motion.nii.gz'))
 
 
