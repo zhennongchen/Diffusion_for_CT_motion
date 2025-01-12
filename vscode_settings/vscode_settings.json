@@ -1,0 +1,19 @@
+{
+	"workspaceFolder": "/workspace/Diffusion_for_CT_motion",
+	"remoteUser": "dw640",
+	"extensions": [
+		"christian-kohler.path-intellisense",
+		"github.copilot",
+		"github.copilot-chat",
+		"ms-python.debugpy",
+		"ms-python.flake8",
+		"ms-python.python",
+		"ms-python.vscode-pylance",
+		"ms-toolsai.jupyter",
+		"ms-toolsai.jupyter-keymap",
+		"ms-toolsai.jupyter-renderers",
+		"ms-toolsai.vscode-jupyter-cell-tags",
+		"ms-toolsai.vscode-jupyter-slideshow",
+		"streetsidesoftware.code-spell-checker"
+	]
+}
