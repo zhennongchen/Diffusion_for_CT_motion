@@ -7,7 +7,7 @@ useradd --no-log-init -m -u ${CONTAINER_UID} -g ${CONTAINER_GID} -o -s /bin/bash
 
 echo -e "export PYTHONPATH=${CONTAINER_WORKDIR}
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}
-export PATH=/opt/conda/bin:/usr/local/nvidia/bin:/usr/local/cuda/bin:\${PATH}" >> /home/${CONTAINER_UNAME}/.bashrc
+export PATH=/usr/local/nvidia/bin:/usr/local/cuda/bin:\${PATH}" >> /home/${CONTAINER_UNAME}/.bashrc
 
 cd /home/${CONTAINER_UNAME}
 
