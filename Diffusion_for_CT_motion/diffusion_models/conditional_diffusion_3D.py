@@ -31,13 +31,12 @@ from ema_pytorch import EMA
 
 from accelerate import Accelerator
 
-from Diffusion_models.denoising_diffusion_pytorch.denoising_diffusion_pytorch.attend import Attend
-from Diffusion_models.denoising_diffusion_pytorch.denoising_diffusion_pytorch.fid_evaluation import FIDEvaluation
+from Diffusion_for_CT_motion.diffusion_models.attend import Attend
 
-from Diffusion_models.denoising_diffusion_pytorch.denoising_diffusion_pytorch.version import __version__
+from Diffusion_for_CT_motion.diffusion_models.version import __version__
 
-import Diffusion_models.functions_collection as ff
-import Diffusion_models.Data_processing as Data_processing
+import Diffusion_for_CT_motion.utils.functions_collection as ff
+import Diffusion_for_CT_motion.utils.Data_processing as Data_processing
 
 # constants
 

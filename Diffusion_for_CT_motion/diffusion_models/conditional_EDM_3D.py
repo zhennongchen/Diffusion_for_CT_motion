@@ -7,8 +7,9 @@ import torch.nn.functional as F
 from functools import partial
 from tqdm import tqdm
 from einops import rearrange, repeat, reduce
+import numpy as np
 
-from Diffusion_for_CT_motion.diffusion_models.conditional_DDPM_3D import *
+from Diffusion_for_CT_motion.diffusion_models.conditional_diffusion_3D import *
 from Diffusion_for_CT_motion.diffusion_models.version import __version__
 import Diffusion_for_CT_motion.utils.functions_collection as ff
 import Diffusion_for_CT_motion.utils.Data_processing as Data_processing
@@ -482,9 +483,10 @@ class Sampler(object):
         diffusion_model,
         generator,
         batch_size,
-        image_size = None,
-        device = 'cuda',
-
+        image_size=None,
+        device='cuda',
+        histogram_bins=None,
+        histogram_bins_mapped=None,
     ):
         super().__init__()
 
@@ -507,8 +509,8 @@ class Sampler(object):
 
         self.generator = generator
         dl = DataLoader(self.generator, batch_size = self.batch_size, shuffle = False, pin_memory = True, num_workers = 0)# cpu_count())
-        self.bins = np.load('/mnt/camca_NAS/diffusion_ct_motion/data/histogram_equalization/bins.npy')
-        self.bins_mapped = np.load('/mnt/camca_NAS/diffusion_ct_motion/data/histogram_equalization/bins_mapped.npy')         
+        self.bins = np.load(histogram_bins)
+        self.bins_mapped = np.load(histogram_bins_mapped)
 
         self.dl = dl
         self.cycle_dl = cycle(dl)

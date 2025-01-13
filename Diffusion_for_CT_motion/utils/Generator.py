@@ -12,8 +12,8 @@ import Diffusion_for_CT_motion.utils.Data_processing as Data_processing
 import Diffusion_for_CT_motion.utils.functions_collection as ff
 
 # histogram equalization pre-saved load
-bins = np.load('/mnt/camca_NAS/diffusion_ct_motion/data/histogram_equalization/bins.npy') # provide these two files in the repo
-bins_mapped = np.load('/mnt/camca_NAS/diffusion_ct_motion/data/histogram_equalization/bins_mapped.npy')
+# bins = np.load('/mnt/camca_NAS/diffusion_ct_motion/data/histogram_equalization/bins.npy') # provide these two files in the repo
+# bins_mapped = np.load('/mnt/camca_NAS/diffusion_ct_motion/data/histogram_equalization/bins_mapped.npy')
 
 # random function
 def random_rotate(i, z_rotate_degree = None, z_rotate_range = [0,0], fill_val = None, order = 0):
@@ -55,9 +55,12 @@ class Dataset_dual_patch(Dataset):
         slice_start,
 
         histogram_equalization,
-        background_cutoff, 
+        background_cutoff,
         maximum_cutoff,
         normalize_factor,
+
+        histogram_bins=None,
+        histogram_bins_mapped=None,
 
         shuffle = False,
         augment = False,
@@ -94,7 +97,11 @@ class Dataset_dual_patch(Dataset):
         self.current_x0_data = None
         self.current_condition_file = None
         self.current_condition_data = None
-       
+
+        if histogram_bins is not None:
+            self.histogram_bins = np.load(histogram_bins)
+        if histogram_bins_mapped is not None:
+            self.histogram_bins_mapped = np.load(histogram_bins_mapped)
 
     def generate_index_array(self):
         np.random.seed()
@@ -130,14 +137,13 @@ class Dataset_dual_patch(Dataset):
         if self.patch_selection != None:
             print(self.patch_selection[0], self.patch_selection[1])
             self.final_patch_origins = self.final_patch_origins[self.patch_selection[0]: self.patch_selection[1]]
-    
 
     def load_file(self, filename):
         ii = nb.load(filename).get_fdata()
     
         # do histogram equalization first
-        if self.histogram_equalization == True:
-            ii = Data_processing.apply_transfer_to_img(ii, bins, bins_mapped)
+        if self.histogram_equalization:
+            ii = Data_processing.apply_transfer_to_img(ii, self.histogram_bins, self.histogram_bins_mapped)
         # cutoff and normalization
         ii = Data_processing.cutoff_intensity(ii,cutoff_low = self.background_cutoff, cutoff_high = self.maximum_cutoff)
         ii = Data_processing.normalize_image(ii, normalize_factor = self.normalize_factor, image_max = self.maximum_cutoff, image_min = self.background_cutoff ,invert = False)

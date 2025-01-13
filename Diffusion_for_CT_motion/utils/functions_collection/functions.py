@@ -3,12 +3,11 @@ import glob
 import os
 from PIL import Image
 import math 
-import SimpleITK as sitk
 import cv2
 import random
 import nibabel as nb
 from dipy.align.reslice import reslice
-import Diffusion_models.Data_processing as dp
+import Diffusion_for_CT_motion.utils.Data_processing as dp
 from skimage.metrics import structural_similarity as compare_ssim
 
 # function: histogram equalization
