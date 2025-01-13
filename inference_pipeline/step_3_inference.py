@@ -119,8 +119,8 @@ def combine_slices(output_filename, original_filename, slice_dir, slice_range_li
             # load all slices
             iend = slab.shape[-1]
         else:
-            # load the central half
-            iend = slab.shape[-1] * 3 // 4
+            # the ending slab will be the average between the end of the current and the start of the next
+            iend = (slice_range_list[i][1] + slice_range_list[i + 1][0]) // 2 - slice_range[0]
 
         res.append(slab[..., istart:iend])
         islice += iend - istart
@@ -155,6 +155,7 @@ def main(args):
 
         slice_range_list = get_slice_range_list(filename, args.img_size_3d, args.slice_step_size)
         print('There are {} slabs to process'.format(len(slice_range_list)), flush=True)
+        print(slice_range_list, flush=True)
 
         # tmp output directory
         tmp_output_dir = os.path.join(output_dir, os.path.basename(filename)[:-7])
