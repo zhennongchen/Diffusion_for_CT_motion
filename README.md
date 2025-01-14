@@ -15,6 +15,8 @@ The main contributions of HM-EDM are as follows:<br />
 (2) utilize [Elucidated Diffusion Model framework](https://github.com/NVlabs/edm) for better performance and faster sampling. Introduce histogram equalization in the image pre-processing to balance the performance in brain tissue and skull. <br />
 (3) trained on simulated CT scans (simulated motion on motion-free fixed CT images using portable CT scan geometry) and validated on real-world portable head CT scans.<br />
 
+## Inference Pipeline
+A clean inference-only pipeline has been built. Please refer to [Inference Pipeline Documentation](inference_pipeline/readme.md).
 
 ## User Guideline
 ### Environment Setup
