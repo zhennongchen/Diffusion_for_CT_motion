@@ -269,34 +269,25 @@ class Trainer(object):
     def __init__(
         self,
         diffusion_model,
+        batch_size,
+
         generator_train,
-        train_batch_size,
-        include_validation,
-        *,
         generator_val = None,
+
+        save_folder = None,
+
         train_num_steps = 10000, # total training epochs
-        results_folder = None,
         train_lr = 1e-4,
         train_lr_decay_every = 100, 
         save_models_every = 1,
         validation_every = 1,
-        
-        ema_update_every = 10,
-        ema_decay = 0.95,
-        adam_betas = (0.9, 0.99),
-
-        amp = False,
-        mixed_precision_type = 'fp16',
-        max_grad_norm = 1.,
-         
-    ):
+        ):
         super().__init__()
 
         # accelerator
         self.accelerator = Accelerator(
             split_batches = True,
-            mixed_precision = mixed_precision_type if amp else 'no'
-        )
+            mixed_precision = 'no',)
 
         # model
         self.model = diffusion_model   # it's not just the model architecture, but the actual model with loss calculation
@@ -304,26 +295,24 @@ class Trainer(object):
         self.channels = diffusion_model.channels
 
         # sampling and training hyperparameters
-        self.batch_size = train_batch_size
+        self.batch_size = batch_size
         self.train_num_steps = train_num_steps
 
         # dataset and dataloader
         self.ds = generator_train
-        dl = DataLoader(self.ds, batch_size = train_batch_size, shuffle = False, pin_memory = True, num_workers = 0)# cpu_count())
+        dl = DataLoader(self.ds, batch_size = batch_size, shuffle = False, pin_memory = True, num_workers = 0)
         self.dl = self.accelerator.prepare(dl)
 
-        self.validation = include_validation
-        if self.validation:
-            self.ds_val = generator_val
-            dl_val = DataLoader(self.ds_val, batch_size = train_batch_size, shuffle = False, pin_memory = True, num_workers = 0)# cpu_count())
-            self.dl_val = self.accelerator.prepare(dl_val)
+        self.ds_val = generator_val
+        dl_val = DataLoader(self.ds_val, batch_size = batch_size, shuffle = False, pin_memory = True, num_workers = 0)
+        self.dl_val = self.accelerator.prepare(dl_val)
 
         # optimizer
-        self.opt = Adam(diffusion_model.parameters(), lr = train_lr, betas = adam_betas)
+        self.opt = Adam(diffusion_model.parameters(), lr = train_lr, betas = (0.9, 0.99))
         self.scheduler = StepLR(self.opt, step_size = 1, gamma=0.95)
         self.train_lr_decay_every = train_lr_decay_every
         self.save_model_every = save_models_every
-        self.max_grad_norm = max_grad_norm
+        self.max_grad_norm = 1.
 
 
         # for logging results in a folder periodically
@@ -331,11 +320,11 @@ class Trainer(object):
         # The purpose of using an EMA is to stabilize and improve the performance of a model during training. It achieves this by maintaining a smoothed version of the model's parameters, which reduces the impact of noise or fluctuations in the training process.
         #Typically, during training, you will update both the original model and the EMA model, but when you want to evaluate or make predictions, you would use the EMA model because it provides a more stable representation of the model's knowledge. This is especially useful in tasks like generative modeling, where you want to generate high-quality samples from the model.
         if self.accelerator.is_main_process:
-            self.ema = EMA(diffusion_model, beta = ema_decay, update_every = ema_update_every)
+            self.ema = EMA(diffusion_model, beta = 0.95, update_every = 10)
             self.ema.to(self.device)
 
-        self.results_folder = results_folder
-        ff.make_folder([self.results_folder])
+        self.save_folder = save_folder
+        ff.make_folder([self.save_folder])
 
         # prepare model, dataloader, optimizer with accelerator
         self.model, self.opt = self.accelerator.prepare(self.model, self.opt)
@@ -358,7 +347,7 @@ class Trainer(object):
             'scaler': self.accelerator.scaler.state_dict() if exists(self.accelerator.scaler) else None,
             'version': __version__}
         
-        torch.save(data, os.path.join(self.results_folder, 'model-' + str(stepNum) + '.pt'))
+        torch.save(data, os.path.join(self.save_folder, 'model-' + str(stepNum) + '.pt'))
 
     def load_model(self, trained_model_filename):
         accelerator = self.accelerator
@@ -463,7 +452,7 @@ class Trainer(object):
                 # save the training log
                 training_log.append([self.step,average_loss, self.scheduler.get_last_lr()[0], val_loss])
                 df = pd.DataFrame(training_log,columns = ['iteration','average_loss','learning_rate', 'validation_loss'])
-                log_folder = os.path.join(os.path.dirname(self.results_folder),'log');ff.make_folder([log_folder])
+                log_folder = os.path.join(os.path.dirname(self.save_folder),'log');ff.make_folder([log_folder])
                 df.to_excel(os.path.join(log_folder, 'training_log.xlsx'),index=False)
 
                 # at the end of each epoch, call on_epoch_end
