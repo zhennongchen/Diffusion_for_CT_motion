@@ -42,6 +42,7 @@ class Dataset_dual_patch(Dataset):
 
         image_size_3D,
         slice_start,
+        slice_num,
 
         # for 3D-patch-wise training
         patch_size,
@@ -69,6 +70,7 @@ class Dataset_dual_patch(Dataset):
         self.condition_list = condition_list
         self.image_size_3D = image_size_3D
         self.slice_start = slice_start
+        self.slice_num = slice_num
         self.patch_size = patch_size
         self.patch_stride = patch_stride
         self.original_patch_num = original_patch_num
@@ -163,11 +165,11 @@ class Dataset_dual_patch(Dataset):
             
         # pick the slice range (when 3D data has more than 50 slices --> our model takes [x,y,50] for trianing)
         if isinstance(self.slice_start, int):  # if slice_start is an int then it will be the start slice, no random pick
-            self.slice_range = [self.slice_start, self.slice_start + self.image_size_3D[-1]]
+            self.slice_range = [self.slice_start, self.slice_start + self.slice_num]
         else: # slice_start is a range, given as [a,b], then please randomly pick a number in [a,b] including a and b
             while True:
                 start = random.randint(self.slice_start[0], self.slice_start[1])
-                self.slice_range = [start, start + self.image_size_3D[-1]]
+                self.slice_range = [start, start + self.slice_num]
                 if self.slice_range[1] <= self.current_x0_data.shape[-1]- 2:
                     break
 

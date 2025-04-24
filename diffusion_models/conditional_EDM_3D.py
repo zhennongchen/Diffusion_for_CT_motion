@@ -432,22 +432,21 @@ class Trainer(object):
                 self.ema.update()
 
                 # do the validation if necessary
-                if self.validation:
-                    if self.step !=0 and divisible_by(self.step, self.validation_every):
-                        print('validation at step: ', self.step)
-                        self.model.eval()
-                        with torch.no_grad():
-                            val_loss = []
-                            for batch in self.dl_val:
-                                batch_x0, batch_condition = batch
-                                data_x0 = batch_x0.to(device)
-                                data_condition = batch_condition.to(device)
-                                with self.accelerator.autocast():
-                                    loss = self.model(data_x0, data_condition )
-                                val_loss.append(loss.item())
-                            val_loss = sum(val_loss) / len(val_loss)
-                            print('validation loss: ', val_loss)
-                        self.model.train(True)
+                if self.step !=0 and divisible_by(self.step, self.validation_every):
+                    print('validation at step: ', self.step)
+                    self.model.eval()
+                    with torch.no_grad():
+                        val_loss = []
+                        for batch in self.dl_val:
+                            batch_x0, batch_condition = batch
+                            data_x0 = batch_x0.to(device)
+                            data_condition = batch_condition.to(device)
+                            with self.accelerator.autocast():
+                                loss = self.model(data_x0, data_condition )
+                            val_loss.append(loss.item())
+                        val_loss = sum(val_loss) / len(val_loss)
+                        print('validation loss: ', val_loss)
+                    self.model.train(True)
 
                 # save the training log
                 training_log.append([self.step,average_loss, self.scheduler.get_last_lr()[0], val_loss])
@@ -457,8 +456,7 @@ class Trainer(object):
 
                 # at the end of each epoch, call on_epoch_end
                 self.ds.on_epoch_end()
-                if self.validation:
-                    self.ds_val.on_epoch_end()
+                self.ds_val.on_epoch_end()
                 pbar.update(1)
 
         accelerator.print('training complete')

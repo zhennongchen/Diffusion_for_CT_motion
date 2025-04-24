@@ -1,3 +1,3 @@
 #!/bin/bash
 
-sudo docker build -t zc_sam:1.0 .
+sudo docker build -t zc_docker:1.0 .
