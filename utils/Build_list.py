@@ -8,6 +8,7 @@ class Build():
         self.a = 1
         self.file_list = file_list
         self.data = pd.read_excel(file_list, dtype = {'PatientID': str, 'AccessionNumber': str})
+        self.data = self.data.fillna(' ')
 
     def __build__(self,batch_list):
         for b in range(len(batch_list)):

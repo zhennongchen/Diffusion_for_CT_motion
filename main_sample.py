@@ -24,7 +24,7 @@ _,_,_,_, _,_, x0_list, _, condition_list, _, _,_,_ = b.__build__(batch_list = [4
 simulated_data = True
 
 # default parameters, don't change unless necessary
-image_size_3D = [256,256,20]
+image_size_3D = [256,256,20] 
 patch_size = 256 # apply on whole image
 slice_range_list = [[0,20],[10,30],[20,40],[30,50]] # do for every 20-slice stack, can change to 25 or some other numbers
 

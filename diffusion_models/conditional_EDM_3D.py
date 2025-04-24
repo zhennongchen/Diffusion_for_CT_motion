@@ -494,9 +494,8 @@ class Sampler(object):
 
         self.generator = generator
         dl = DataLoader(self.generator, batch_size = self.batch_size, shuffle = False, pin_memory = True, num_workers = 0)# cpu_count())
-        self.bins = np.load('/mnt/camca_NAS/diffusion_ct_motion/data/histogram_equalization/bins.npy')
-        self.bins_mapped = np.load('/mnt/camca_NAS/diffusion_ct_motion/data/histogram_equalization/bins_mapped.npy')         
-
+        self.bins = self.generator.bins
+        self.bins_mapped = self.generator.bins_mapped
         self.dl = dl
         self.cycle_dl = cycle(dl)
  
@@ -511,7 +510,7 @@ class Sampler(object):
         self.ema.load_state_dict(data["ema"])
 
 
-    def sample_3D_w_trained_model(self, trained_model_filename, ground_truth_image_file, motion_image_file,  slice_range, save_file,save_gt_motion = None, not_start_from_first_slice = False):
+    def sample_3D_w_trained_model(self, trained_model_filename,  motion_image_file,  slice_range, save_file):
      
         self.load_model(trained_model_filename) 
         
@@ -521,15 +520,9 @@ class Sampler(object):
         # check whether model is on GPU:
         print('model device: ', next(self.ema.ema_model.parameters()).device)
 
-        gt = nb.load(ground_truth_image_file)
-        gt_img = gt.get_fdata()
-        print('gt image shape: ', gt_img.shape)
-        if not_start_from_first_slice == False:
-            gt_img = gt_img[:,:,slice_range[0]: slice_range[1]]
-        else:
-            gt_img = gt_img[:,:,slice_range[0] + 10: slice_range[1] + 10]
-        gt_img = Data_processing.cutoff_intensity(gt_img, cutoff_low = self.generator.background_cutoff, cutoff_high = self.generator.maximum_cutoff)
-        nb.save(nb.Nifti1Image(gt_img, gt.affine), os.path.join(os.path.dirname(save_file) , 'gt_slice' + str(slice_range[0]) +'to' + str(slice_range[1])+ '.nii.gz'))
+        motion = nb.load(motion_image_file)
+        affine = motion.affine
+        motion_img = motion.get_fdata()[:,:,slice_range[0]: slice_range[1]]
 
         # start to run
         with torch.inference_mode():
@@ -537,11 +530,11 @@ class Sampler(object):
                 datas = next(self.cycle_dl)
                 data_condition = datas[1]
                 data_condition_save = torch.clone(data_condition).numpy().squeeze() 
-                data_condition_save = Data_processing.crop_or_pad(data_condition_save, [gt_img.shape[0], gt_img.shape[1], data_condition_save.shape[-1]], value = np.min(data_condition_save))
+                data_condition_save = Data_processing.crop_or_pad(data_condition_save, [motion_img.shape[0], motion_img.shape[1], data_condition_save.shape[-1]], value = np.min(data_condition_save))
                 data_condition_save = Data_processing.normalize_image(data_condition_save, normalize_factor = self.generator.normalize_factor, image_max = self.generator.maximum_cutoff, image_min = self.generator.background_cutoff, invert = True)
                 if self.generator.histogram_equalization:
                     data_condition_save = Data_processing.apply_transfer_to_img(data_condition_save, self.bins, self.bins_mapped,reverse = True)
-                nb.save(nb.Nifti1Image(data_condition_save, gt.affine), os.path.join(os.path.dirname(save_file), 'condition.nii.gz'))
+                nb.save(nb.Nifti1Image(data_condition_save, affine), os.path.join(os.path.dirname(save_file), 'condition.nii.gz'))
 
                 data_condition = data_condition.to(device)           
                         
@@ -552,22 +545,22 @@ class Sampler(object):
         pred_img = pred_img.detach().cpu().numpy().squeeze()
         print(pred_img.shape)
     
-        pred_img = Data_processing.crop_or_pad(pred_img, [gt_img.shape[0], gt_img.shape[1], self.image_size[-1]], value = np.min(gt_img))
+        pred_img = Data_processing.crop_or_pad(pred_img, [motion_img.shape[0], motion_img.shape[1], self.image_size[-1]], value = np.min(motion_img))
         pred_img = Data_processing.normalize_image(pred_img, normalize_factor = self.generator.normalize_factor, image_max = self.generator.maximum_cutoff, image_min = self.generator.background_cutoff, invert = True)
         if self.generator.histogram_equalization:
             pred_img = Data_processing.apply_transfer_to_img(pred_img, self.bins, self.bins_mapped,reverse = True)
         pred_img = Data_processing.correct_shift_caused_in_pad_crop_loop(pred_img)
       
-        nb.save(nb.Nifti1Image(pred_img, gt.affine), save_file)
+        nb.save(nb.Nifti1Image(pred_img, affine), save_file)
 
 
-        # save gt and motion
-        if save_gt_motion:
-            if not_start_from_first_slice == False:
-                motion_img = nb.load(motion_image_file).get_fdata()[:,:,slice_range[0]: slice_range[1]]
-            else:
-                motion_img = nb.load(motion_image_file).get_fdata()[:,:,slice_range[0] + 10: slice_range[1] + 10]
+        # # save gt and motion
+        # if save_gt_motion:
+        #     if not_start_from_first_slice == False:
+        #         motion_img = nb.load(motion_image_file).get_fdata()[:,:,slice_range[0]: slice_range[1]]
+        #     else:
+        #         motion_img = nb.load(motion_image_file).get_fdata()[:,:,slice_range[0] + 10: slice_range[1] + 10]
    
-            motion_img = Data_processing.cutoff_intensity(motion_img, cutoff_low = self.generator.background_cutoff, cutoff_high = self.generator.maximum_cutoff)
-            motion_img_save = nb.Nifti1Image(motion_img, gt.affine)
-            nb.save(motion_img_save, os.path.join(os.path.dirname(save_file), 'motion_slice' + str(slice_range[0]) +'to' + str(slice_range[1])+ '.nii.gz'))
+        #     motion_img = Data_processing.cutoff_intensity(motion_img, cutoff_low = self.generator.background_cutoff, cutoff_high = self.generator.maximum_cutoff)
+        #     motion_img_save = nb.Nifti1Image(motion_img, gt.affine)
+        #     nb.save(motion_img_save, os.path.join(os.path.dirname(save_file), 'motion_slice' + str(slice_range[0]) +'to' + str(slice_range[1])+ '.nii.gz'))
