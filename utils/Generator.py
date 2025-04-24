@@ -175,11 +175,11 @@ class Dataset_dual_patch(Dataset):
 
         # make x0 and condition ready
         x0_image_data = np.copy(self.current_x0_data)[:,:,self.slice_range[0]:self.slice_range[1]]
-        x0_image_data = Data_processing.crop_or_pad(x0_image_data, [self.image_size_3D[0], self.image_size_3D[1], self.image_size_3D[2]], value = np.min(x0_image_data))
+        x0_image_data = Data_processing.crop_or_pad(x0_image_data, [self.image_size_3D[0], self.image_size_3D[1], self.slice_range[1] - self.slice_range[0]], value = np.min(x0_image_data))
         x0_image_data = x0_image_data[self.final_patch_origins[p][0] : self.final_patch_origins[p][0] + self.patch_size, self.final_patch_origins[p][1] : self.final_patch_origins[p][1] + self.patch_size, ...]
 
         condition_image_data = np.copy(self.current_condition_data)[:,: ,self.slice_range[0]:self.slice_range[1]]
-        condition_image_data = Data_processing.crop_or_pad(condition_image_data, [self.image_size_3D[0], self.image_size_3D[1], self.image_size_3D[2]], value = np.min(condition_image_data))
+        condition_image_data = Data_processing.crop_or_pad(condition_image_data, [self.image_size_3D[0], self.image_size_3D[1], self.slice_range[1] - self.slice_range[0]], value = np.min(condition_image_data))
         condition_image_data = condition_image_data[self.final_patch_origins[p][0] : self.final_patch_origins[p][0] + self.patch_size, self.final_patch_origins[p][1] : self.final_patch_origins[p][1] + self.patch_size, ...]
 
         # augmentation
@@ -190,6 +190,8 @@ class Dataset_dual_patch(Dataset):
                 # condition_image_data, _ = random_rotate(condition_image_data, z_rotate_degree = z_rotate_degree, order = 1)
                 condition_image_data, _, _ = random_translate(condition_image_data, x_translate = x_translate, y_translate = y_translate)
                 # print('augment : z_rotate_degree, x_translate, y_translate: ', z_rotate_degree, x_translate, y_translate)
+
+        # print('x0_image_data.shape, condition_image_data.shape', x0_image_data.shape, condition_image_data.shape)
             
         x0_image_data = torch.from_numpy(x0_image_data).unsqueeze(0).float()
         condition_image_data = torch.from_numpy(condition_image_data).unsqueeze(0).float()
