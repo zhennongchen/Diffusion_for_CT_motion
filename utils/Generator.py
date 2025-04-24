@@ -11,10 +11,6 @@ from torch.utils.data import Dataset
 import Diffusion_for_CT_motion.utils.Data_processing as Data_processing
 import Diffusion_for_CT_motion.utils.functions_collection as ff
 
-# histogram equalization pre-saved load
-bins = np.load('/mnt/camca_NAS/diffusion_ct_motion/data/histogram_equalization/bins.npy') # provide these two files in the repo
-bins_mapped = np.load('/mnt/camca_NAS/diffusion_ct_motion/data/histogram_equalization/bins_mapped.npy')
-
 # random function
 def random_rotate(i, z_rotate_degree = None, z_rotate_range = [0,0], fill_val = None, order = 0):
     # only do rotate according to z (in-plane rotation)
@@ -41,47 +37,53 @@ def random_translate(i, x_translate = None,  y_translate = None, translate_range
 class Dataset_dual_patch(Dataset):
     def __init__(
         self,
-        img_list,
-        condition_list,
+        x0_list,  # this is the x0 in the diffusion framework, which is the image we want to generate --> motion-free image
+        condition_list, # this is the motion-corrupted image
+
         image_size_3D,
-
-        patch_size,
-        patch_stride, 
-        original_patch_num,
-        random_sampled_patch_num,
-        patch_selection, 
-
-        slice_number,
         slice_start,
 
+        # for 3D-patch-wise training
+        patch_size,
+        patch_stride,  # equal to patch size
+        original_patch_num, # original_patch means segment the entire image into non-overlapped patches with set dimensions. for example, if we have a 256x256 image and the patch size is 128x128, then we can segment the image into 4 patches.
+        random_sampled_patch_num, # random_sampled_patch means randomly sample patches from the original image, the vertex of the patchs can be anywhere in the image. 
+        
+        # for histogram equalization, an important image preprocessing step in our pipeline
         histogram_equalization,
+        bins,
+        bins_mapped,
+
+        # for data normalization
         background_cutoff, 
         maximum_cutoff,
         normalize_factor,
 
+        # for augmentation
         shuffle = False,
         augment = False,
         augment_frequency = 0,
     ):
         super().__init__()
-        self.img_list = img_list
+        self.x0_list = x0_list
         self.condition_list = condition_list
         self.image_size_3D = image_size_3D
+        self.slice_start = slice_start
         self.patch_size = patch_size
         self.patch_stride = patch_stride
         self.original_patch_num = original_patch_num
         self.random_sampled_patch_num = random_sampled_patch_num
-        self.patch_selection = patch_selection
-        self.slice_number = slice_number
-        self.slice_start = slice_start
+
         self.histogram_equalization = histogram_equalization
+        self.bins = bins
+        self.bins_mapped = bins_mapped
         self.background_cutoff = background_cutoff
         self.maximum_cutoff = maximum_cutoff
         self.normalize_factor = normalize_factor
         self.shuffle = shuffle
         self.augment = augment
         self.augment_frequency = augment_frequency
-        self.num_files = len(img_list)
+        self.num_files = len(x0_list)
 
         self.original_patch_origins, _ = ff.patch_definition(self.image_size_3D, self.patch_size, self.patch_stride)
         assert self.original_patch_num <= len(self.original_patch_origins)
@@ -118,40 +120,32 @@ class Dataset_dual_patch(Dataset):
         return self.num_files * self.patch_num
 
     def sample_patches(self):
-        random_samples = ff.sample_patch_origins(self.original_patch_origins, self.random_sampled_patch_num , include_original_list = False)
-
+        # original patches
         if self.shuffle == True:
             original_samples = [self.original_patch_origins[i] for i in random.sample(range(len(self.original_patch_origins)), self.original_patch_num)]
         else:
             original_samples = self.original_patch_origins[0:self.original_patch_num]
+
+        # random patches
+        random_samples = ff.sample_patch_origins(self.original_patch_origins, self.random_sampled_patch_num , include_original_list = False)
         
         self.final_patch_origins = original_samples + random_samples
        
-        if self.patch_selection != None:
-            print(self.patch_selection[0], self.patch_selection[1])
-            self.final_patch_origins = self.final_patch_origins[self.patch_selection[0]: self.patch_selection[1]]
-    
-
     def load_file(self, filename):
         ii = nb.load(filename).get_fdata()
     
         # do histogram equalization first
         if self.histogram_equalization == True:
-            ii = Data_processing.apply_transfer_to_img(ii, bins, bins_mapped)
+            ii = Data_processing.apply_transfer_to_img(ii, self.bins, self.bins_mapped)
         # cutoff and normalization
         ii = Data_processing.cutoff_intensity(ii,cutoff_low = self.background_cutoff, cutoff_high = self.maximum_cutoff)
         ii = Data_processing.normalize_image(ii, normalize_factor = self.normalize_factor, image_max = self.maximum_cutoff, image_min = self.background_cutoff ,invert = False)
-
         return ii
         
     def __getitem__(self, index):
-        # print('in this geiitem, self.index_array is: ', self.index_array)
-        f,p = self.index_array[index]
-        # print('index is: ', index, ' now we pick file ', f)
-        x0_filename = self.img_list[f]
-        # print('x0 filename is: ', x0_filename, ' while current x0 file is: ', self.current_x0_file)
+        f,p = self.index_array[index] # f is the index of the file, p is the index of the patch
+        x0_filename = self.x0_list[f]
         condition_file = self.condition_list[f]
-        # print('condition file is: ', condition_file, ' while current condition file is: ', self.current_condition_file)
 
         if x0_filename != self.current_x0_file:
             x0_img = self.load_file(x0_filename)
@@ -166,45 +160,37 @@ class Dataset_dual_patch(Dataset):
 
             # sample patches for this case:
             self.sample_patches()
-            # print('in this patient, the sampled patches are: ', self.final_patch_origins)
             
-        # pick the slice range (can either be random or fixed)
-        if isinstance(self.slice_start, int): 
-            self.slice_range = [self.slice_start, self.slice_start + self.slice_number]
-        else:
-            # self.slice_start is a range, given as [a,b], then please randomly pick a number in [a,b] including a and b
-            count = 0
+        # pick the slice range (when 3D data has more than 50 slices --> our model takes [x,y,50] for trianing)
+        if isinstance(self.slice_start, int):  # if slice_start is an int then it will be the start slice, no random pick
+            self.slice_range = [self.slice_start, self.slice_start + self.image_size_3D[-1]]
+        else: # slice_start is a range, given as [a,b], then please randomly pick a number in [a,b] including a and b
             while True:
                 start = random.randint(self.slice_start[0], self.slice_start[1])
-                self.slice_range = [start, start + self.slice_number]
-                if self.slice_range[1] <= self.current_x0_data.shape[-1]- 4: # make some buffer so that the last slice of our cropped image is not the last slice of the entire image
+                self.slice_range = [start, start + self.image_size_3D[-1]]
+                if self.slice_range[1] <= self.current_x0_data.shape[-1]- 2:
                     break
-                count += 1
-                if count == 500:
-                    start = 6; self.slice_range = [start, start + self.slice_number]; break
 
+        # make x0 and condition ready
         x0_image_data = np.copy(self.current_x0_data)[:,:,self.slice_range[0]:self.slice_range[1]]
-
-        x0_image_data = Data_processing.crop_or_pad(x0_image_data, [self.image_size_3D[0], self.image_size_3D[1], self.slice_number], value = np.min(x0_image_data))
+        x0_image_data = Data_processing.crop_or_pad(x0_image_data, [self.image_size_3D[0], self.image_size_3D[1], self.image_size_3D[2]], value = np.min(x0_image_data))
         x0_image_data = x0_image_data[self.final_patch_origins[p][0] : self.final_patch_origins[p][0] + self.patch_size, self.final_patch_origins[p][1] : self.final_patch_origins[p][1] + self.patch_size, ...]
 
         condition_image_data = np.copy(self.current_condition_data)[:,: ,self.slice_range[0]:self.slice_range[1]]
-        condition_image_data = Data_processing.crop_or_pad(condition_image_data, [self.image_size_3D[0], self.image_size_3D[1], self.slice_number], value = np.min(condition_image_data))
+        condition_image_data = Data_processing.crop_or_pad(condition_image_data, [self.image_size_3D[0], self.image_size_3D[1], self.image_size_3D[2]], value = np.min(condition_image_data))
         condition_image_data = condition_image_data[self.final_patch_origins[p][0] : self.final_patch_origins[p][0] + self.patch_size, self.final_patch_origins[p][1] : self.final_patch_origins[p][1] + self.patch_size, ...]
 
         # augmentation
         if self.augment == True:
             if random.uniform(0,1) < self.augment_frequency:
-                # x0_image_data, z_rotate_degree = random_rotate(x0_image_data,  order = 0)
+                # x0_image_data, z_rotate_degree = random_rotate(x0_image_data,  order = 1)
                 x0_image_data, x_translate, y_translate = random_translate(x0_image_data)
-                # condition_image_data, _ = random_rotate(condition_image_data, z_rotate_degree = z_rotate_degree, order = 0)
+                # condition_image_data, _ = random_rotate(condition_image_data, z_rotate_degree = z_rotate_degree, order = 1)
                 condition_image_data, _, _ = random_translate(condition_image_data, x_translate = x_translate, y_translate = y_translate)
                 # print('augment : z_rotate_degree, x_translate, y_translate: ', z_rotate_degree, x_translate, y_translate)
             
         x0_image_data = torch.from_numpy(x0_image_data).unsqueeze(0).float()
         condition_image_data = torch.from_numpy(condition_image_data).unsqueeze(0).float()
-
-        # print('shape of x0 image data: ', x0_image_data.shape, ' and condition image data: ', condition_image_data.shape)
         return x0_image_data, condition_image_data
     
     def on_epoch_end(self):

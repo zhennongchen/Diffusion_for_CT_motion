@@ -23,7 +23,7 @@ _,_,_,_, _,_, x0_list_train, _, condition_list_train, _, _,_,_ = build_sheet.__b
 _,_,_,_, _,_, x0_list_val, _, condition_list_val, _, _,_,_ = build_sheet.__build__(batch_list = [3])  # this is data path for validation data
 
 # set default, don't change unless necessary
-image_size_3D = [256,256,50]
+image_size_3D = [256,256,50] 
 patch_size = 128
 slice_number = 50; slice_start = [6,12] # if slice_start is an int then it will be the start slice, no random pick; if it is a range [a,  b], then randomly pick a starting slice in the range
 val_slice_number = 20; val_slice_start = [20,21]
@@ -49,7 +49,7 @@ diffusion_model = edm.EDM(
     num_sample_steps = 50,
     clip_or_not = False,)
 
-generator_train = Generator.Dataset_dual_patch(
+generator_train = Generator.Dataset_dual_patch( 
     x0_list_train,
     condition_list_train,
     image_size_3D = image_size_3D,

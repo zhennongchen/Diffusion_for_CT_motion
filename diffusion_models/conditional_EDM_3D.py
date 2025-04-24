@@ -8,7 +8,7 @@ from functools import partial
 from tqdm import tqdm
 from einops import rearrange, repeat, reduce
 
-from Diffusion_for_CT_motion.diffusion_models.conditional_DDPM_3D import *
+from Diffusion_for_CT_motion.diffusion_models.conditional_diffusion_3D import *
 from Diffusion_for_CT_motion.diffusion_models.version import __version__
 import Diffusion_for_CT_motion.utils.functions_collection as ff
 import Diffusion_for_CT_motion.utils.Data_processing as Data_processing
