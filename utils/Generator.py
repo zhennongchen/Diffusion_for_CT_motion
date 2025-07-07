@@ -9,7 +9,7 @@ from skimage.measure import block_reduce
 import torch
 from torch.utils.data import Dataset
 import Diffusion_for_CT_motion.utils.Data_processing as Data_processing
-import Diffusion_for_CT_motion.utils.functions_collection as ff
+import Diffusion_for_CT_motion.functions_collection as ff
 
 # random function
 def random_rotate(i, z_rotate_degree = None, z_rotate_range = [0,0], fill_val = None, order = 0):

@@ -20,8 +20,9 @@ class Build():
 
         batch_list = np.asarray(c['batch'])
         patient_id_list = np.asarray(c['PatientID'])
+        patient_subid_list = np.asarray(c['AccessionNumber'])
         motion_free_file_list = np.asarray(c['MotionFree_File'])
         motion_file_list = np.asarray(c['Motion_File'])
         
-        return batch_list, patient_id_list, motion_free_file_list,motion_file_list
+        return batch_list, patient_id_list, patient_subid_list, motion_free_file_list, motion_file_list
        
