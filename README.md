@@ -19,7 +19,7 @@ The main contributions of HM-EDM are as follows:<br />
 ## User Guideline
 ### Environment Setup
 - You can build the docker from the folder ```docker```. <br />
-- Step 1 needs ```/docker/docker_tensorflow``` and step 2-3 needs ```/docker/docker_pytorch```
+- Step 1 needs ```/docker/docker_tensorflow``` and step 2-3 need ```/docker/docker_pytorch```
 
 ### Data Preparation (we have examples available!)
 - **CT data**<br />
