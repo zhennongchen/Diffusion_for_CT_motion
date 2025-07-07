@@ -7,7 +7,7 @@ import os
 import math
 import nibabel as nb
 from scipy import interpolate
-from HeadCT_motion_correction_PAR.motion_simulator.transformation.generate_transformation_matrix import *
+from Diffusion_for_CT_motion.motion_simulation.transformation.generate_transformation_matrix import *
 
 
 

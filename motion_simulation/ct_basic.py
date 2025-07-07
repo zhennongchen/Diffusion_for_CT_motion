@@ -14,7 +14,7 @@ import CTProjector.src.ct_projector.projector.numpy.parallel as numpy_para
 import numpy as np
 import cupy as cp
 import os
-import Diffusion_for_CT_motion.utils.functions_collection as ff
+import Diffusion_for_CT_motion.functions_collection as ff
 import Diffusion_for_CT_motion.motion_simulation.transformation as transform
 import glob as gb
 import nibabel as nb

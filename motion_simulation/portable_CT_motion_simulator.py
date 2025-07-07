@@ -16,7 +16,7 @@ import ct_basic as ct
 import Diffusion_for_CT_motion.utils.functions_collection as ff
 import Diffusion_for_CT_motion.motion_simulation.transformation as transform
 import HeadCT_motion_correction_PAR.Defaults as Defaults
-import HeadCT_motion_correction_PAR.Data_processing as dp
+import HeadCT_motion_correction_PAR.Data_processing as dp 
 
 
 import ct_projector.projector.cupy as ct_projector
@@ -53,7 +53,7 @@ ff.make_folder([save_folder])
 
 # define patient list index and simulation index
 L = np.arange(0,2)
-patient_index_list = np.arange(0,20)
+patient_index_list = np.arange(0,20) 
 
 for i in patient_index_list:
     row = patient_sheet.iloc[i]
