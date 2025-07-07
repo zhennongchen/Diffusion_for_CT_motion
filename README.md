@@ -1,4 +1,4 @@
-# Diffusion-based generative model for CT motion correction
+# Diffusion-based generative model for Portable CT motion correction
 **Author: Zhennong Chen, PhD**<br />
 
 This is the GitHub repo based on a published paper: <br />
@@ -8,11 +8,12 @@ Authors: Zhennong Chen, Siyeop Yoon, Quirin Strotzer, Rehab Naeem Khalid, Matthe
 **Citation**: Chen, Zhennong, et al. "Portable Head CT Motion Artifact Correction via Diffusion-based Generative Model." Computerized Medical Imaging and Graphics (2024): 102478.
 
 ## Description
-We have proposed HeadMotion-Elucidated Diffusion Model(HM-EDM), to reduce the motion artifact in 3D head CT scans.<br />
+We have proposed HeadMotion-Elucidated Diffusion Model(HM-EDM), to reduce the motion artifact in 3D portable brain CT scans.<br />
 The main contributions of HM-EDM are as follows:<br />
 (1) first diffusion-based generative model to tackle the motion artifact in CT, suppress performance aginst CNN-based methods.<br />
 (2) utilize [Elucidated Diffusion Model framework](https://github.com/NVlabs/edm) for better performance and faster sampling. Introduce histogram equalization in the image pre-processing to balance the performance in brain tissue and skull. <br />
 (3) trained on simulated CT scans (simulated motion on motion-free fixed CT images using portable CT scan geometry) and validated on real-world portable head CT scans.<br />
+(4) note it can be used to corrected the motion artifact in conventional CT as well. 
 
 
 ## User Guideline
