@@ -27,7 +27,8 @@ The main contributions of HM-EDM are as follows:<br />
         - example data: motion-free image: ```example_data/data/fixed_CT```; simulated data: ```example_data/data/simulations```, where folder ```static``` is the motion-free ground truth, ```random_X``` are motion-corrupted images. <br />
     - If you want to apply the trained model on new cases, you only need motion-corrupted images: <br />
         - example data: real-world portable CT scan: ```example_data/data/portable_CT```. <br />
-    - please pay attention to pixel size, to simulate data, we need [1,1,1]mm^3; while to input into model, we need [1,1,2.5]mm^3. check ```step1.ipynb``` to see how we resample the pixel sizes. <br />
+    - please pay attention to pixel size
+        - to simulate data, we need [1,1,1]mm^3; while to input into model, we need [1,1,2.5]mm^3. check ```step1.ipynb``` to see how we resample the pixel sizes. <br />
     
 
 - **Patient list** <br />
