@@ -21,7 +21,7 @@ accelerate==0.13.1
 ema-pytorch
 pytorch-fid
 torch-summary==1.4.5
-dipy
+dipy==1.7.0
 
 docker==6.0.1
 # torch==1.13.0
